@@ -1,0 +1,15 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.PracticeToDoList" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    </style>
+
+    <style name="Theme.PracticeToDoList" parent="Base.Theme.PracticeToDoList" />
+
+    <style name="ToDolist_SplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/blue</item> <!-- your splash background -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.PracticeToDoList</item>
+    </style>
+</resources>
