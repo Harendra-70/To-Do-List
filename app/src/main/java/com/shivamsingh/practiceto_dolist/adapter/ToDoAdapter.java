@@ -24,6 +24,7 @@ import com.shivamsingh.practiceto_dolist.database.ToDoDatabase;
 import com.shivamsingh.practiceto_dolist.database.ToDoEntity;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
 
 public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> {
 
@@ -31,10 +32,13 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> 
     private final Context context;
     private final ToDoDatabase myDB;
 
-    public ToDoAdapter(Context context, ArrayList<ToDoEntity> myList, ToDoDatabase myDB) {
+    private final ExecutorService executor;
+
+    public ToDoAdapter(Context context, ArrayList<ToDoEntity> myList, ToDoDatabase myDB,ExecutorService executor) {
         this.context = context;
         this.myList = myList;
         this.myDB = myDB;
+        this.executor=executor;
     }
 
     @NonNull
@@ -56,11 +60,12 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> 
                 int currentPosition = holder.getAdapterPosition();
                 if (currentPosition == RecyclerView.NO_POSITION) return;
 
-                if (buttonView.isChecked()) {
-                    myDB.toDoDao().updateStatus(myList.get(currentPosition).getId(), 1);
-                } else {
-                    myDB.toDoDao().updateStatus(myList.get(currentPosition).getId(), 0);
-                }
+                executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        myDB.toDoDao().updateStatus(myList.get(currentPosition).getId(),buttonView.isChecked() ? 1: 0);
+                    }
+                });
             }
         });
 
@@ -85,7 +90,14 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> 
                         int id = myList.get(currentPosition).getId();
                         myList.remove(currentPosition);
                         notifyItemRemoved(currentPosition);
-                        myDB.toDoDao().deleteTask(id);
+
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                myDB.toDoDao().deleteTask(id);
+                            }
+                        });
+
                     }
                 });
                 dialog.show();
@@ -145,7 +157,13 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> 
                             myList.get(currentPosition).setTask(newTask);
 
                             notifyItemChanged(currentPosition);
-                            myDB.toDoDao().updateTask(id, newTask);
+
+                            executor.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    myDB.toDoDao().updateTask(id, newTask);
+                                }
+                            });
 
                             dialog.dismiss();
                         }
@@ -177,5 +195,8 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> 
             checkBox = itemView.findViewById(R.id.checkbox);
             rowlayout = itemView.findViewById(R.id.rowlayout);
         }
+    }
+    public void shutdownExecutor() {
+        executor.shutdown();
     }
 }

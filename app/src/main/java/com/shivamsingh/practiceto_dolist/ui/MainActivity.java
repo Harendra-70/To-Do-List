@@ -1,6 +1,8 @@
 package com.shivamsingh.practiceto_dolist.ui;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -25,6 +27,8 @@ import com.shivamsingh.practiceto_dolist.database.ToDoDatabase;
 import com.shivamsingh.practiceto_dolist.database.ToDoEntity;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     ArrayList<ToDoEntity> toDoList;
@@ -32,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
     ToDoDatabase myDB;
     ToDoAdapter adapter;
     FloatingActionButton addbtn;
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,12 +104,26 @@ public class MainActivity extends AppCompatActivity {
 
                         if (!task.isEmpty()) {
                             ToDoEntity entity = new ToDoEntity(task, 0);
-                            long id = myDB.toDoDao().insertTask(entity);
 
-                            entity.setId((int) id);
-                            toDoList.add(0, entity);
-                            adapter.notifyItemInserted(0);
-                            recyclerView.scrollToPosition(0);
+                            executor.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    long id = myDB.toDoDao().insertTask(entity);
+                                    entity.setId((int) id);
+
+                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                        @Override
+                                        public void run() {
+
+                                            toDoList.add(0, entity);
+                                            adapter.notifyItemInserted(0);
+                                            recyclerView.scrollToPosition(0);
+                                        }
+                                    });
+                                }
+                            });
+
+
                             dialog.dismiss();
                         } else {
                             Toast.makeText(MainActivity.this, "Please enter a task", Toast.LENGTH_SHORT).show();
@@ -116,8 +136,26 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        toDoList = (ArrayList<ToDoEntity>) myDB.toDoDao().getAllTasks();
-        adapter = new ToDoAdapter(MainActivity.this, toDoList, myDB);
-        recyclerView.setAdapter(adapter);
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                toDoList = (ArrayList<ToDoEntity>) myDB.toDoDao().getAllTasks();
+
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        adapter = new ToDoAdapter(MainActivity.this, toDoList, myDB,executor);
+                        recyclerView.setAdapter(adapter);
+                    }
+                });
+            }
+        });
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        adapter.shutdownExecutor();
     }
 }
