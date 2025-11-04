@@ -20,7 +20,6 @@ public abstract class ToDoDatabase extends RoomDatabase {
                             context.getApplicationContext(),
                             ToDoDatabase.class,
                             DB_NAME)
-                    .allowMainThreadQueries() // Only for learning - not recommended in production
                     .fallbackToDestructiveMigration()
                     .build();
         }

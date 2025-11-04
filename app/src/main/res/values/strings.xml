@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">PracticeTo-DoList</string>
+    <string name="app_name">To-DoList</string>
+    <string name="add_new_task">Add New Task</string>
+    <string name="task_name">Task name</string>
+    <string name="save_task">Save Task</string>
+    <string name="FABtn_content_description">Add new task</string>
 </resources>

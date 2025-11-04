@@ -3,14 +3,17 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:id="@+id/rowlayout"
+    android:background="?attr/colorSurfaceVariant"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardCornerRadius="10dp"
         app:cardElevation="5dp"
-        app:cardUseCompatPadding="true">
+        app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+        app:cardUseCompatPadding="true"
+        >
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -22,12 +25,14 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/checkbox"
                 android:paddingStart="8dp"
+                android:paddingEnd="8dp"
                 android:textSize="20sp"
-                android:buttonTint="@color/black"
+                android:buttonTint="?attr/colorPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:text="hellooo" />
 
         </LinearLayout>
 
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>
