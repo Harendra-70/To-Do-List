@@ -213,7 +213,11 @@ splashScreen.setKeepOnScreenCondition(() ->
 
 ## 📱 Screenshots
 
+<img width="1080" height="2400" alt="Image" src="https://github.com/user-attachments/assets/8963c8e5-4f19-43dc-8a12-f6a40f521c88" />
 
+<img width="1080" height="2400" alt="Image" src="https://github.com/user-attachments/assets/37a896ce-6bea-416f-b4ba-06b54dfe8d76" />
+
+<img width="1080" height="2400" alt="Image" src="https://github.com/user-attachments/assets/6c9c280e-0878-4c3a-8bb8-d347af4b0829" />
 
 
 ## 📄 License
