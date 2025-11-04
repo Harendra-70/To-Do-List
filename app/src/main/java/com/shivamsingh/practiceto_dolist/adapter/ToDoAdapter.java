@@ -21,24 +21,23 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.shivamsingh.practiceto_dolist.R;
 import com.shivamsingh.practiceto_dolist.database.ToDoEntity;
-import com.shivamsingh.practiceto_dolist.repository.ToDoRepository;
+import com.shivamsingh.practiceto_dolist.viewmodel.ToDoViewModel;
 
 import java.util.ArrayList;
-;
+
 
 public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> {
 
     private final ArrayList<ToDoEntity> myList;
     private final Context context;
-    private final ToDoRepository repository;
+    private final ToDoViewModel viewModel;
 
 
-   public ToDoAdapter(Context context, ArrayList<ToDoEntity> myList, ToDoRepository repository) {
-       this.context = context;
-       this.myList = myList;
-       this.repository = repository;
-   }
-
+    public ToDoAdapter(Context context, ArrayList<ToDoEntity> myList, ToDoViewModel viewModel) {
+        this.context = context;
+        this.myList = myList;
+        this.viewModel = viewModel;
+    }
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -58,7 +57,7 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> 
                 int currentPosition = holder.getAdapterPosition();
                 if (currentPosition == RecyclerView.NO_POSITION) return;
 
-                repository.updateStatus(myList.get(currentPosition).getId(), isChecked ? 1 : 0);
+                viewModel.updateStatus(myList.get(currentPosition).getId(), isChecked ? 1 : 0);
             }
         });
 
@@ -84,7 +83,7 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> 
                         myList.remove(currentPosition);
                         notifyItemRemoved(currentPosition);
 
-                        repository.deleteTask(id);
+                        viewModel.deleteTask(id);
                     }
                 });
                 dialog.show();
@@ -145,7 +144,7 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.MyViewHolder> 
 
                             notifyItemChanged(currentPosition);
 
-                            repository.updateTask(id, newTask);
+                            viewModel.updateTask(id, newTask);
 
                             dialog.dismiss();
                         }

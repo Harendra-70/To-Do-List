@@ -14,6 +14,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,7 +24,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.shivamsingh.practiceto_dolist.R;
 import com.shivamsingh.practiceto_dolist.adapter.ToDoAdapter;
 import com.shivamsingh.practiceto_dolist.database.ToDoEntity;
-import com.shivamsingh.practiceto_dolist.repository.ToDoRepository;
+import com.shivamsingh.practiceto_dolist.viewmodel.ToDoViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +34,8 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     ToDoAdapter adapter;
     FloatingActionButton addBtn;
-    ToDoRepository repository;
+
+    ToDoViewModel toDoViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,18 +59,18 @@ public class MainActivity extends AppCompatActivity {
         // Initialize
         recyclerView = findViewById(R.id.recyclerView);
         addBtn = findViewById(R.id.addbtn);
-        repository = new ToDoRepository(this);
-
-        // Initialize list and adapter
+        toDoViewModel=new ViewModelProvider(this).get(ToDoViewModel.class);
         toDoList = new ArrayList<>();
-        adapter = new ToDoAdapter(this, toDoList, repository);
+        adapter = new ToDoAdapter(this, toDoList, toDoViewModel);
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-        // Load tasks
-        repository.getAllTasks(new ToDoRepository.Callback<List<ToDoEntity>>() {
+        // Observe LiveData
+        toDoViewModel.getTasks().observe(this, new Observer<List<ToDoEntity>>() {
             @Override
-            public void onResult(List<ToDoEntity> result) {
+            public void onChanged(List<ToDoEntity> result) {
+                toDoList.clear();
                 toDoList.addAll(result);
                 adapter.notifyDataSetChanged();
             }
@@ -127,16 +130,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 final ToDoEntity task = new ToDoEntity(taskText, 0);
-                repository.insert(task, new ToDoRepository.Callback<Long>() {
-                    @Override
-                    public void onResult(Long id) {
-                        task.setId(id.intValue());
-                        toDoList.add(0, task);
-                        adapter.notifyItemInserted(0);
-                        recyclerView.scrollToPosition(0);
-                    }
-                });
-
+                toDoViewModel.insertTask(task);
                 dialog.dismiss();
             }
         });
@@ -144,9 +138,4 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        repository.shutdownExecutor();
-    }
 }
