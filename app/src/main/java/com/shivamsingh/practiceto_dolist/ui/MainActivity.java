@@ -1,8 +1,6 @@
 package com.shivamsingh.practiceto_dolist.ui;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -23,21 +21,18 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.shivamsingh.practiceto_dolist.R;
 import com.shivamsingh.practiceto_dolist.adapter.ToDoAdapter;
-import com.shivamsingh.practiceto_dolist.database.ToDoDatabase;
 import com.shivamsingh.practiceto_dolist.database.ToDoEntity;
+import com.shivamsingh.practiceto_dolist.repository.ToDoRepository;
 
 import java.util.ArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     ArrayList<ToDoEntity> toDoList;
     RecyclerView recyclerView;
-    ToDoDatabase myDB;
     ToDoAdapter adapter;
-    FloatingActionButton addbtn;
-
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    FloatingActionButton addBtn;
+    ToDoRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,110 +47,106 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Delay splash screen removal for 2 seconds
+        // Keep splash for 2 seconds
         long splashStartTime = System.currentTimeMillis();
-        splashScreen.setKeepOnScreenCondition(() -> {
-            return System.currentTimeMillis() - splashStartTime < 2000;
+        splashScreen.setKeepOnScreenCondition(() ->
+                System.currentTimeMillis() - splashStartTime < 2000
+        );
+
+        // Initialize
+        recyclerView = findViewById(R.id.recyclerView);
+        addBtn = findViewById(R.id.addbtn);
+        repository = new ToDoRepository(this);
+
+        // Initialize list and adapter
+        toDoList = new ArrayList<>();
+        adapter = new ToDoAdapter(this, toDoList, repository);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
+
+        // Load tasks
+        repository.getAllTasks(new ToDoRepository.Callback<List<ToDoEntity>>() {
+            @Override
+            public void onResult(List<ToDoEntity> result) {
+                toDoList.addAll(result);
+                adapter.notifyDataSetChanged();
+            }
         });
 
-        recyclerView = findViewById(R.id.recyclerView);
-        myDB = ToDoDatabase.getInstance(this);
-
-        addbtn = findViewById(R.id.addbtn);
-        addbtn.setOnClickListener(new View.OnClickListener() {
-            EditText editText;
-            Button savebtn;
-
+        // Add button click
+        addBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                BottomSheetDialog dialog = new BottomSheetDialog(MainActivity.this);
-                dialog.setContentView(R.layout.add_new_task_dialogbox);
-                editText = dialog.findViewById(R.id.editText);
-                savebtn = dialog.findViewById(R.id.savebtn);
+                showAddTaskDialog();
+            }
+        });
+    }
 
-                // Initially disable the button
-                if (savebtn != null) {
-                    savebtn.setEnabled(false);
-                    savebtn.setAlpha(0.5f);
+    private void showAddTaskDialog() {
+        final BottomSheetDialog dialog = new BottomSheetDialog(MainActivity.this);
+        dialog.setContentView(R.layout.add_new_task_dialogbox);
+
+        final EditText editText = dialog.findViewById(R.id.editText);
+        final Button saveBtn = dialog.findViewById(R.id.savebtn);
+
+        if (editText == null || saveBtn == null) {
+            dialog.dismiss();
+            return;
+        }
+
+        // Initially disable save button
+        saveBtn.setEnabled(false);
+        saveBtn.setAlpha(0.5f);
+
+        // Enable/disable button based on input
+        editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                boolean hasText = !editText.getText().toString().trim().isEmpty();
+                saveBtn.setEnabled(hasText);
+                saveBtn.setAlpha(hasText ? 1.0f : 0.5f);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        // Save button click
+        saveBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String taskText = editText.getText().toString().trim();
+                if (taskText.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "Please enter a task", Toast.LENGTH_SHORT).show();
+                    return;
                 }
 
-
-                editText.addTextChangedListener(new TextWatcher() {
+                final ToDoEntity task = new ToDoEntity(taskText, 0);
+                repository.insert(task, new ToDoRepository.Callback<Long>() {
                     @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        boolean flag = !editText.getText().toString().trim().isEmpty();
-                        savebtn.setEnabled(flag);
-                        savebtn.setAlpha(flag ? 1.0f : 0.5f);
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
+                    public void onResult(Long id) {
+                        task.setId(id.intValue());
+                        toDoList.add(0, task);
+                        adapter.notifyItemInserted(0);
+                        recyclerView.scrollToPosition(0);
                     }
                 });
 
-                savebtn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String task = editText.getText().toString().trim();
-
-                        if (!task.isEmpty()) {
-                            ToDoEntity entity = new ToDoEntity(task, 0);
-
-                            executor.execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    long id = myDB.toDoDao().insertTask(entity);
-                                    entity.setId((int) id);
-
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        @Override
-                                        public void run() {
-
-                                            toDoList.add(0, entity);
-                                            adapter.notifyItemInserted(0);
-                                            recyclerView.scrollToPosition(0);
-                                        }
-                                    });
-                                }
-                            });
-
-
-                            dialog.dismiss();
-                        } else {
-                            Toast.makeText(MainActivity.this, "Please enter a task", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-                dialog.show();
+                dialog.dismiss();
             }
         });
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                toDoList = (ArrayList<ToDoEntity>) myDB.toDoDao().getAllTasks();
-
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        adapter = new ToDoAdapter(MainActivity.this, toDoList, myDB,executor);
-                        recyclerView.setAdapter(adapter);
-                    }
-                });
-            }
-        });
-
+        dialog.show();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        adapter.shutdownExecutor();
+        repository.shutdownExecutor();
     }
 }
